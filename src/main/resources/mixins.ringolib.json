@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "package": "com.ringoway.ringolib.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "mixins": [
+    "MixinItemStack",
+    "MixinNbtUtils",
+    "MixinBlock",
+    "RegisterEventMixin",
+    "MixinRecipeManager",
+    "RegistrateRegistrationMixin",
+    "ArchitecturyDataMixin",
+    "ArchitecturyEventListenerMixin",
+    "ArchitecturyRegistrySupplierMixin",
+    "EventHooksCreativeTabMixin",
+    "BuildCreativeModeTabContentsEventMixin",
+    "LevelAccessorMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

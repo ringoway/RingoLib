@@ -1,0 +1,55 @@
+# Gradle & Build
+.gradle/
+build/
+out/
+bin/
+*.class
+hs_err_pid*.log
+replay_pid*.log
+
+# Minecraft / NeoForge Runtime
+run/
+runs/
+run-data/
+.run/
+eclipse/
+mcmodsrepo/
+repo/
+logs/
+*.log
+crash-reports/
+.mixin.out/
+**/.cache/
+src/generated/resources/.cache/
+
+# IDEs & Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.eclipse/
+.settings/
+.metadata/
+.classpath
+.project
+*.launch
+
+# OS & Temp
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+.env
+.env.*
+nul
+
+# Local docs
+docs/description/
+docs/mod-publish.md
+docs/discord-announcement.md
+*tokens*.md
