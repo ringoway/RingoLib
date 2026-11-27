@@ -2,12 +2,10 @@
 
 Ready-to-use configuration snippets from my own setups for common Create addons.
 
----
-
 ## Example 1: Merging TFMG lead into Oreganized
 
 ### Context
-Both **TFMG** (Create: The Factory Must Grow) and **Oreganized** register raw lead, raw lead blocks, lead ingots, lead nuggets, and lead storage blocks. Here we keep Oreganized's lead variants and retire TFMG's duplicates.
+Both TFMG (Create: The Factory Must Grow) and Oreganized register raw lead, raw lead blocks, lead ingots, lead nuggets, and lead storage blocks. Here we keep Oreganized's lead variants and retire TFMG's duplicates.
 
 ### `config/ringolib/migrations.json`
 ```json
@@ -76,12 +74,10 @@ Both **TFMG** (Create: The Factory Must Grow) and **Oreganized** register raw le
 }
 ```
 
----
-
 ## Example 2: Merging Create Big Cannons steel into TFMG
 
 ### Context
-**Create Big Cannons** (CBC) adds its own steel ingots, steel blocks, and molten steel fluid for casting cannon barrels. **TFMG** already has blast furnaces and its own steel chain. Redirecting CBC steel to TFMG lets players cast cannons out of TFMG's molten steel without dealing with two incompatible fluids in pipes and basins.
+Create Big Cannons (CBC) adds its own steel ingots, steel blocks, and molten steel fluid for casting cannon barrels. TFMG already has blast furnaces and its own steel chain. Redirecting CBC steel to TFMG lets players cast cannons out of TFMG's molten steel without dealing with two incompatible fluids in pipes and basins.
 
 ### `config/ringolib/migrations.json`
 ```json

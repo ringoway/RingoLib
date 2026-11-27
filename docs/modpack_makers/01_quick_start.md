@@ -8,8 +8,6 @@ Normally you end up disabling recipes with KubeJS or datapacks, rewriting tags, 
 2. Leftover recipes are dropped before `RecipeManager` loads them, so JEI and EMI never index them.
 3. If an existing world already had the old item in a chest or inventory, RingoLib rewrites the ID when the stack loads.
 
----
-
 ## Config file layout
 
 On first launch, RingoLib creates a `ringolib/` folder inside `config/` with two JSON files:
@@ -24,14 +22,12 @@ minecraft/
 
 *(If an older pack installation still has `ringolib_migrations.json` or `ringolib_disabled_recipes.json` in the root `config/` folder, RingoLib moves them into `config/ringolib/` automatically on startup.)*
 
----
-
 ## Typical workflow
 
 Suppose your pack includes both *Create Big Cannons* and *TFMG*, and both mods add steel (`createbigcannons:steel_ingot` and `tfmg:steel_ingot`).
 
-1. **Pick the winner.** Decide which mod's item stays in the game. Here we keep `tfmg:steel_ingot` because TFMG has the full blast furnace chain.
-2. **Add a redirect in `config/ringolib/migrations.json`:**
+1. Pick the winner: decide which mod's item stays in the game. Here we keep `tfmg:steel_ingot` because TFMG has the full blast furnace chain.
+2. Add a redirect in `config/ringolib/migrations.json`:
    ```json
    {
      "items": [
@@ -44,7 +40,7 @@ Suppose your pack includes both *Create Big Cannons* and *TFMG*, and both mods a
      ]
    }
    ```
-3. **Remove the duplicate compacting recipes in `config/ringolib/disabled_recipes.json`:**
+3. Remove the duplicate compacting recipes in `config/ringolib/disabled_recipes.json`:
    ```json
    {
      "disabled_recipes": [
@@ -53,6 +49,6 @@ Suppose your pack includes both *Create Big Cannons* and *TFMG*, and both mods a
      ]
    }
    ```
-4. **Launch the game.** CBC's steel ingot is gone from creative tabs and JEI, while any CBC cannon recipe that asks for `createbigcannons:steel_ingot` resolves straight to `tfmg:steel_ingot`.
+4. Launch the game. CBC's steel ingot is gone from creative tabs and JEI, while any CBC cannon recipe that asks for `createbigcannons:steel_ingot` resolves straight to `tfmg:steel_ingot`.
 
 Note that `migrations.json` touches game registries, so editing it requires a full game restart. `disabled_recipes.json` only touches recipes, so you can edit it while the game is running and type `/reload`.

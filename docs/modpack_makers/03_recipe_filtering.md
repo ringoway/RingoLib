@@ -2,15 +2,11 @@
 
 `config/ringolib/disabled_recipes.json` removes unwanted or duplicate recipes before Minecraft parses them.
 
----
-
 ## Why you still need this after a redirect
 
 Redirecting `createbigcannons:steel_ingot` to `tfmg:steel_ingot` aliases the item ID, which is great for machine recipes. The catch is that CBC's own crafting recipe (`9 steel ingots -> 1 steel block`) also stays valid and now uses TFMG steel ingots too. Players end up seeing two identical steel block recipes in JEI and EMI.
 
 Instead of shipping datapacks full of empty `"neoforge:false"` condition overrides, list those recipe IDs in `disabled_recipes.json`. RingoLib strips them from the recipe map at the head of `RecipeManager.apply(...)`, so neither the server nor JEI/EMI ever loads them.
-
----
 
 ## File format
 
@@ -27,8 +23,6 @@ Instead of shipping datapacks full of empty `"neoforge:false"` condition overrid
   ]
 }
 ```
-
----
 
 ## Exact IDs vs. wildcards
 
@@ -51,9 +45,7 @@ Use `*` to match any sequence of characters, or `?` to match a single character.
 ]
 ```
 
-All literal characters outside `*` and `?` are escaped automatically, so dots, slashes, and hyphens in mod paths behave as plain characters rather than regex operators.
-
----
+All literal characters outside `*` and `?` are escaped automatically, so dots, slashes, and hyphens in mod paths behave as plain characters instead of regex operators.
 
 ## Live reload with `/reload`
 

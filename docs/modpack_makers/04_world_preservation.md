@@ -4,28 +4,24 @@ Removing a mod from an existing world usually ends badly. The moment a player lo
 
 RingoLib prevents that for any ID registered in its migration tables.
 
----
-
 ## How item preservation works
 
 ### 1. NBT interception (`MixinItemStack`)
 When Minecraft deserializes an `ItemStack` in `ItemStack.parseOptional`, RingoLib checks whether the saved `"id"` matches a registered item migration:
-- **Target mod is loaded:** RingoLib rewrites `"id"` to the target item ID on a copy of the NBT tag before vanilla parses the stack. Enchantments, stack counts, damage values, and other Data Components carry over untouched.
-- **Target mod is missing:** Instead of letting vanilla discard the unknown item, RingoLib swaps `"id"` to `ringolib:dummy_item` and stores the original metadata inside `minecraft:custom_data`:
+- If the target mod is loaded, RingoLib rewrites `"id"` to the target item ID on a copy of the NBT tag before vanilla parses the stack. Enchantments, stack counts, damage values, and other Data Components carry over untouched.
+- If the target mod is missing, instead of letting vanilla discard the unknown item, RingoLib swaps `"id"` to `ringolib:dummy_item` and stores the original metadata inside `minecraft:custom_data`:
   - `RingoLib_OriginalId`
   - `RingoLib_TargetId`
   - `RingoLib_RequiredMod`
 
 ### 2. In-game placeholder tooltip
-While the required mod is absent, the player sees a **Preserved Item (Mod Required)** placeholder in their chest or inventory rather than an empty slot. Hovering over it shows which item it originally was and which mod ID needs to be installed to get it back.
+While the required mod is absent, the player sees a `Preserved Item (Mod Required)` placeholder in their chest or inventory instead of an empty slot. Hovering over it shows which item it originally was and which mod ID needs to be installed to get it back.
 
 ### 3. Automatic restoration (`DummyItem#inventoryTick`)
 Once the missing mod is installed again and the stack ticks inside a player's inventory on the server:
 1. `DummyItem` looks up `RingoLib_TargetId` in `BuiltInRegistries.ITEM`.
 2. It creates a new `ItemStack` of the real item with the saved stack size and copies all Data Components over.
-3. It strips out the three internal `RingoLib_*` keys from `minecraft:custom_data` (removing `custom_data` completely if nothing else was in it), so the restored item stacks cleanly with freshly crafted items of the same type.
-
----
+3. It strips out the three internal `RingoLib_*` keys from `minecraft:custom_data` (removing `custom_data` completely if nothing else was in it), so the restored item stacks normally with freshly crafted items of the same type.
 
 ## Block state migration (`MixinNbtUtils` & `DummyBlock`)
 

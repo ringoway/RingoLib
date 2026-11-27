@@ -2,8 +2,6 @@
 
 `config/ringolib/migrations.json` controls both save-file ID migrations and full registry redirects.
 
----
-
 ## File structure
 
 The root JSON object has four optional arrays:
@@ -24,8 +22,6 @@ The root JSON object has four optional arrays:
 
 If one entry in the file has a typo or malformed ID, RingoLib logs a warning and skips that single rule instead of aborting the whole config.
 
----
-
 ## Entry fields
 
 Every object inside `"items"`, `"blocks"`, and `"fluids"` uses the same fields:
@@ -37,8 +33,6 @@ Every object inside `"items"`, `"blocks"`, and `"fluids"` uses the same fields:
 | `required_mod` | String | No | Mod ID that must be loaded for this rule to take effect. If that mod is missing, RingoLib leaves the original entry alone during registration (or wraps saved items in a placeholder). |
 | `redirect_registry` | Boolean | No | Defaults to `false`. When `false`, RingoLib only rewrites NBT when loading worlds. When `true`, it also cancels registration of `from`, registers a NeoForge registry alias, and strips duplicates out of creative tabs. |
 | `description` | String | No | Optional note for yourself or other pack maintainers. Ignored by the game. |
-
----
 
 ## Merging items (`items`)
 
@@ -68,11 +62,9 @@ When `redirect_registry` is `true` and `oreganized` is installed:
 3. It removes the redirected stack from TFMG's creative tab so players do not see two identical ingots in TFMG and Oreganized tabs.
 4. Any `tfmg:lead_ingot` already saved in a player's world loads as `oreganized:lead_ingot`.
 
----
-
 ## Merging blocks (`blocks`)
 
-In Minecraft, a placed block (`minecraft:block`) and the item you hold in your hand (`minecraft:item`) live in two separate registries. When you merge a storage block or ore block, list it in **both** `"blocks"` and `"items"`:
+In Minecraft, a placed block (`minecraft:block`) and the item you hold in your hand (`minecraft:item`) live in two separate registries. When you merge a storage block or ore block, list it in both `"blocks"` and `"items"`:
 
 ```json
 "items": [
@@ -92,8 +84,6 @@ In Minecraft, a placed block (`minecraft:block`) and the item you hold in your h
   }
 ]
 ```
-
----
 
 ## Merging fluids (`fluids`)
 
@@ -125,8 +115,6 @@ Bucket names are not standardized across mods (some use `_bucket`, others `bucke
   }
 ]
 ```
-
----
 
 ## Other registries (`registry_redirects`)
 
