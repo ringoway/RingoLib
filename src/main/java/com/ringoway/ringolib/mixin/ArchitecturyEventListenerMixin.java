@@ -22,6 +22,7 @@ public abstract class ArchitecturyEventListenerMixin {
             @Coerce Object data,
             CallbackInfo ci
     ) {
+        com.ringoway.ringolib.RingoLib.ensureSuppressionsPosted();
         if (data instanceof ArchitecturyDataAccess access) {
             access.ringolib$pruneRedirected(key);
         }

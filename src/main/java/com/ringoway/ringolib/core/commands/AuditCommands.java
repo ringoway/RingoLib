@@ -13,6 +13,7 @@ import com.ringoway.ringolib.api.RegistryRedirectManager;
 import com.ringoway.ringolib.api.RingoMigrationAPI;
 import com.ringoway.ringolib.core.RingoLibConfig;
 import com.ringoway.ringolib.core.ban.BannedItemsManager;
+import com.ringoway.ringolib.core.content.ContentSuppressionRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -39,9 +40,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * RingoLib configuration audit, rule validation, and cross-mod material duplicate detector (/rl audit ...).
- */
 final class AuditCommands {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -72,6 +70,7 @@ final class AuditCommands {
         int itemRedirects = redirects.getOrDefault(Registries.ITEM, Map.of()).size();
         int blockRedirects = redirects.getOrDefault(Registries.BLOCK, Map.of()).size();
         int fluidRedirects = redirects.getOrDefault(Registries.FLUID, Map.of()).size();
+        int beRedirects = redirects.getOrDefault(Registries.BLOCK_ENTITY_TYPE, Map.of()).size();
         int totalRedirects = redirects.values().stream().mapToInt(Map::size).sum();
 
         source.sendSuccess(() -> Component.literal("=== RingoLib Status ===")
@@ -81,12 +80,27 @@ final class AuditCommands {
         sendMetric(source, "Block migrations", RingoMigrationAPI.getAllBlockMigrations().size(), ChatFormatting.WHITE);
         sendMetric(source, "Fluid migrations", RingoMigrationAPI.getAllFluidMigrations().size(), ChatFormatting.WHITE);
         sendMetric(source, "Registry redirects (total)", totalRedirects, ChatFormatting.AQUA);
-        sendMetric(source, "  Item / Block / Fluid redirects",
-                itemRedirects + " / " + blockRedirects + " / " + fluidRedirects, ChatFormatting.GRAY);
+        sendMetric(source, "  Item / Block / Fluid / BE redirects",
+                itemRedirects + " / " + blockRedirects + " / " + fluidRedirects + " / " + beRedirects,
+                ChatFormatting.GRAY);
         sendMetric(source, "Disabled recipe rules", RecipeFilterManager.getRawRules().size(), ChatFormatting.YELLOW);
         sendMetric(source, "Unmatched recipe rules", RecipeFilterManager.getUnmatchedRules().size(),
                 RecipeFilterManager.getUnmatchedRules().isEmpty() ? ChatFormatting.GREEN : ChatFormatting.RED);
         sendMetric(source, "Banned items", BannedItemsManager.getBannedItems().size(), ChatFormatting.RED);
+
+        ContentSuppressionRegistry.Stats stats = ContentSuppressionRegistry.getStats();
+        sendMetric(source, "Content suppressions (total)", stats.total(), ChatFormatting.LIGHT_PURPLE);
+        if (stats.total() > 0) {
+            sendMetric(source, "  Blocks / Items / Fluids / BEs",
+                    stats.blocks() + " / " + stats.items() + " / " + stats.fluids() + " / " + stats.blockEntities(),
+                    ChatFormatting.GRAY);
+            sendMetric(source, "  Categories / Tabs / World",
+                    stats.recipeCategories() + " / " + stats.creativeTabs() + " / " + stats.worldReplacements(),
+                    ChatFormatting.GRAY);
+            sendMetric(source, "  Loot / Advancements / Trades / Structures",
+                    stats.lootRules() + " / " + stats.advancements() + " / " + stats.trades() + " / " + stats.structureRules(),
+                    ChatFormatting.GRAY);
+        }
 
         return 1;
     }
@@ -144,6 +158,13 @@ final class AuditCommands {
             }
         }
 
+        for (var entry : ContentSuppressionRegistry.getExactWorldReplacementTargets().entrySet()) {
+            if (!BuiltInRegistries.BLOCK.containsKey(entry.getValue())) {
+                issues.add("[world_replacement] Target block missing: "
+                        + entry.getKey() + " -> " + entry.getValue());
+            }
+        }
+
         if (issues.isEmpty()) {
             source.sendSuccess(() -> Component.translatable("commands.ringolib.audit.valid")
                     .withStyle(ChatFormatting.GREEN), false);
@@ -169,7 +190,6 @@ final class AuditCommands {
         Map<String, Set<ResourceLocation>> itemGroups = new TreeMap<>();
         Map<String, Set<ResourceLocation>> fluidGroups = new TreeMap<>();
 
-        // 1. Tag-based item duplicate detection (#c:ingots/*, #c:plates/*, etc.)
         BuiltInRegistries.ITEM.getTagNames().forEach(tagKey -> {
             ResourceLocation tagLoc = tagKey.location();
             if (!tagLoc.getNamespace().equals("c")) return;
@@ -189,7 +209,6 @@ final class AuditCommands {
             });
         });
 
-        // 2. Naming-convention item duplicate detection (catches untagged sheets/ingots/nuggets)
         for (Item item : BuiltInRegistries.ITEM) {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
             if (RegistryRedirectManager.isItemRedirected(id)) continue;
@@ -200,7 +219,6 @@ final class AuditCommands {
             }
         }
 
-        // 3. Tag-based & naming-based fluid duplicate detection
         BuiltInRegistries.FLUID.getTagNames().forEach(tagKey -> {
             ResourceLocation tagLoc = tagKey.location();
             if (!tagLoc.getNamespace().equals("c")) return;
@@ -268,7 +286,7 @@ final class AuditCommands {
                         multiModItems.size(),
                         multiModFluids.size()
                 ).withStyle(ChatFormatting.GOLD)
-                .append(Component.literal(" -> ")).withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(" -> ").withStyle(ChatFormatting.GRAY))
                 .append(CommandChatHelper.copyable(outFile.getFileName().toString(), outFile.toString(), ChatFormatting.YELLOW)),
                 false);
 

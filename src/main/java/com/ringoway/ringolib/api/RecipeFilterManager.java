@@ -1,8 +1,12 @@
 package com.ringoway.ringolib.api;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import com.ringoway.ringolib.core.RingoLibConfig;
+import com.ringoway.ringolib.core.content.ContentSuppressionRegistry;
+import com.ringoway.ringolib.core.content.GlobMatcher;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -15,45 +19,41 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * Universal manager for filtering and disabling duplicate or unwanted recipes.
+ * Filters recipes from {@code config/ringolib/disabled_recipes.json} and Java API rules
+ * that persist across {@code /reload}.
  */
 public class RecipeFilterManager {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final List<String> OUTPUT_JSON_KEYS = List.of("result", "results", "output", "outputs");
 
     private record WildcardRule(String rawRule, Pattern pattern) {
     }
 
-    private static final Set<String> RAW_RULES = ConcurrentHashMap.newKeySet();
+    private static final Set<String> CONFIG_RAW_RULES = ConcurrentHashMap.newKeySet();
     private static final Set<String> MATCHED_RULES = ConcurrentHashMap.newKeySet();
-    private static final Map<ResourceLocation, String> EXACT_DISABLED = new ConcurrentHashMap<>();
-    private static final List<WildcardRule> WILDCARD_PATTERNS = new CopyOnWriteArrayList<>();
+    private static final Map<ResourceLocation, String> CONFIG_EXACT = new ConcurrentHashMap<>();
+    private static final List<WildcardRule> CONFIG_WILDCARDS = new CopyOnWriteArrayList<>();
+
+    private static final Set<String> API_RAW_RULES = ConcurrentHashMap.newKeySet();
+    private static final Map<ResourceLocation, String> API_EXACT = new ConcurrentHashMap<>();
+    private static final List<WildcardRule> API_WILDCARDS = new CopyOnWriteArrayList<>();
+    private static final List<Predicate<ResourceLocation>> API_ID_PREDICATES = new CopyOnWriteArrayList<>();
+    private static final List<BiPredicate<ResourceLocation, JsonElement>> API_JSON_PREDICATES = new CopyOnWriteArrayList<>();
+    private static final List<Predicate<ResourceLocation>> API_OUTPUT_ITEM_PREDICATES = new CopyOnWriteArrayList<>();
 
     public static void disableRecipe(String recipeId) {
-        if (recipeId == null || recipeId.isBlank()) {
-            return;
-        }
-        String trimmed = recipeId.trim();
-        if (trimmed.contains("*") || trimmed.contains("?")) {
-            RAW_RULES.add(trimmed);
-            WILDCARD_PATTERNS.add(new WildcardRule(trimmed, compileWildcardPattern(trimmed)));
-            LOGGER.debug("RingoLib: Registered wildcard recipe filter: {}", trimmed);
-        } else {
-            ResourceLocation id = ResourceLocation.tryParse(trimmed);
-            if (id == null) {
-                LOGGER.warn("RingoLib: Ignoring invalid recipe ResourceLocation in filter: '{}'", trimmed);
-                return;
-            }
-            RAW_RULES.add(id.toString());
-            EXACT_DISABLED.put(id, id.toString());
-            LOGGER.debug("RingoLib: Registered disabled recipe: {}", id);
-        }
+        registerRule(recipeId, API_RAW_RULES, API_EXACT, API_WILDCARDS);
     }
 
     public static void disableRecipe(ResourceLocation recipeId) {
@@ -61,14 +61,93 @@ public class RecipeFilterManager {
             return;
         }
         String raw = recipeId.toString();
-        RAW_RULES.add(raw);
-        EXACT_DISABLED.put(recipeId, raw);
-        LOGGER.debug("RingoLib: Registered disabled recipe: {}", recipeId);
+        API_RAW_RULES.add(raw);
+        API_EXACT.put(recipeId, raw);
+        LOGGER.debug("RingoLib: Registered API disabled recipe: {}", recipeId);
+    }
+
+    public static void disableConfigRecipe(String recipeId) {
+        registerRule(recipeId, CONFIG_RAW_RULES, CONFIG_EXACT, CONFIG_WILDCARDS);
+    }
+
+    public static void disableRecipes(Predicate<ResourceLocation> idPredicate) {
+        Objects.requireNonNull(idPredicate, "idPredicate");
+        API_ID_PREDICATES.add(idPredicate);
+    }
+
+    public static void disableRecipes(BooleanSupplier condition, Predicate<ResourceLocation> idPredicate) {
+        Objects.requireNonNull(condition, "condition");
+        Objects.requireNonNull(idPredicate, "idPredicate");
+        API_ID_PREDICATES.add(id -> condition.getAsBoolean() && idPredicate.test(id));
+    }
+
+    public static void disableRecipesMatchingJson(BiPredicate<ResourceLocation, JsonElement> jsonPredicate) {
+        Objects.requireNonNull(jsonPredicate, "jsonPredicate");
+        API_JSON_PREDICATES.add(jsonPredicate);
+    }
+
+    public static void disableRecipesMatchingJson(
+            BooleanSupplier condition,
+            BiPredicate<ResourceLocation, JsonElement> jsonPredicate
+    ) {
+        Objects.requireNonNull(condition, "condition");
+        Objects.requireNonNull(jsonPredicate, "jsonPredicate");
+        API_JSON_PREDICATES.add((id, json) -> condition.getAsBoolean() && jsonPredicate.test(id, json));
+    }
+
+    public static void disableRecipesByOutput(ResourceLocation itemId) {
+        Objects.requireNonNull(itemId, "itemId");
+        API_OUTPUT_ITEM_PREDICATES.add(itemId::equals);
+    }
+
+    public static void disableRecipesByOutput(String itemId) {
+        Predicate<ResourceLocation> matcher = GlobMatcher.toPredicate(itemId);
+        API_OUTPUT_ITEM_PREDICATES.add(matcher);
+    }
+
+    public static void disableRecipesByOutput(Predicate<ResourceLocation> outputItemPredicate) {
+        Objects.requireNonNull(outputItemPredicate, "outputItemPredicate");
+        API_OUTPUT_ITEM_PREDICATES.add(outputItemPredicate);
+    }
+
+    public static void disableRecipesByOutput(
+            BooleanSupplier condition,
+            Predicate<ResourceLocation> outputItemPredicate
+    ) {
+        Objects.requireNonNull(condition, "condition");
+        Objects.requireNonNull(outputItemPredicate, "outputItemPredicate");
+        API_OUTPUT_ITEM_PREDICATES.add(id -> condition.getAsBoolean() && outputItemPredicate.test(id));
+    }
+
+    private static void registerRule(
+            String recipeId,
+            Set<String> rawRules,
+            Map<ResourceLocation, String> exactMap,
+            List<WildcardRule> wildcardList
+    ) {
+        if (recipeId == null || recipeId.isBlank()) {
+            return;
+        }
+        String trimmed = recipeId.trim();
+        if (GlobMatcher.isGlob(trimmed)) {
+            if (rawRules.add(trimmed)) {
+                wildcardList.add(new WildcardRule(trimmed, GlobMatcher.compile(trimmed)));
+                LOGGER.debug("RingoLib: Registered wildcard recipe filter: {}", trimmed);
+            }
+        } else {
+            ResourceLocation id = ResourceLocation.tryParse(trimmed);
+            if (id == null) {
+                LOGGER.warn("RingoLib: Ignoring invalid recipe ResourceLocation in filter: '{}'", trimmed);
+                return;
+            }
+            rawRules.add(id.toString());
+            exactMap.put(id, id.toString());
+            LOGGER.debug("RingoLib: Registered disabled recipe: {}", id);
+        }
     }
 
     /**
-     * Persists a recipe filter rule into config/ringolib/disabled_recipes.json and applies it live
-     * to the running server's RecipeManager (syncing updated recipes to connected players).
+     * Saves the rule to {@code disabled_recipes.json} and applies it live to the running server.
      *
      * @return true if the rule was newly added, false if invalid or already present.
      */
@@ -77,7 +156,7 @@ public class RecipeFilterManager {
             return false;
         }
         String trimmed = rule.trim();
-        if (!trimmed.contains("*") && !trimmed.contains("?")) {
+        if (!GlobMatcher.isGlob(trimmed)) {
             ResourceLocation id = ResourceLocation.tryParse(trimmed);
             if (id == null) {
                 return false;
@@ -86,7 +165,7 @@ public class RecipeFilterManager {
         }
 
         boolean added = RingoLibConfig.addDisabledRecipeToFile(trimmed);
-        disableRecipe(trimmed);
+        disableConfigRecipe(trimmed);
 
         if (server != null) {
             List<RecipeHolder<?>> remaining = server.getRecipeManager().getRecipes().stream()
@@ -103,9 +182,6 @@ public class RecipeFilterManager {
         return added;
     }
 
-    /**
-     * Removes a rule from config/ringolib/disabled_recipes.json and reloads configured rules.
-     */
     public static boolean enableRecipePersistently(String rule) {
         if (rule == null || rule.isBlank()) {
             return false;
@@ -117,37 +193,21 @@ public class RecipeFilterManager {
         return removed;
     }
 
-    /**
-     * Safely compiles a glob pattern (* and ?) into a bounded regular expression,
-     * escaping all literal segments via Pattern.quote and collapsing consecutive wildcards
-     * to prevent regex injection and catastrophic backtracking (ReDoS).
-     */
-    private static Pattern compileWildcardPattern(String glob) {
-        String normalized = glob.replaceAll("\\*{2,}", "*");
-        StringBuilder regex = new StringBuilder("^");
-        int segmentStart = 0;
-        for (int i = 0; i < normalized.length(); i++) {
-            char c = normalized.charAt(i);
-            if (c == '*' || c == '?') {
-                if (i > segmentStart) {
-                    regex.append(Pattern.quote(normalized.substring(segmentStart, i)));
-                }
-                regex.append(c == '*' ? ".*" : ".");
-                segmentStart = i + 1;
-            }
-        }
-        if (segmentStart < normalized.length()) {
-            regex.append(Pattern.quote(normalized.substring(segmentStart)));
-        }
-        regex.append('$');
-        return Pattern.compile(regex.toString());
+    public static void clearConfigRules() {
+        CONFIG_RAW_RULES.clear();
+        MATCHED_RULES.clear();
+        CONFIG_EXACT.clear();
+        CONFIG_WILDCARDS.clear();
     }
 
     public static void clear() {
-        RAW_RULES.clear();
-        MATCHED_RULES.clear();
-        EXACT_DISABLED.clear();
-        WILDCARD_PATTERNS.clear();
+        clearConfigRules();
+        API_RAW_RULES.clear();
+        API_EXACT.clear();
+        API_WILDCARDS.clear();
+        API_ID_PREDICATES.clear();
+        API_JSON_PREDICATES.clear();
+        API_OUTPUT_ITEM_PREDICATES.clear();
     }
 
     public static void reload() {
@@ -157,42 +217,88 @@ public class RecipeFilterManager {
     public static boolean isRecipeDisabled(ResourceLocation id) {
         if (id == null) return false;
 
-        String exactRule = EXACT_DISABLED.get(id);
-        if (exactRule != null) {
-            MATCHED_RULES.add(exactRule);
+        String exactConfig = CONFIG_EXACT.get(id);
+        if (exactConfig != null) {
+            MATCHED_RULES.add(exactConfig);
             return true;
         }
-        if (!WILDCARD_PATTERNS.isEmpty()) {
+        if (API_EXACT.containsKey(id)) {
+            return true;
+        }
+
+        if (!CONFIG_WILDCARDS.isEmpty()) {
             String str = id.toString();
-            for (WildcardRule rule : WILDCARD_PATTERNS) {
+            for (WildcardRule rule : CONFIG_WILDCARDS) {
                 if (rule.pattern().matcher(str).matches()) {
                     MATCHED_RULES.add(rule.rawRule());
                     return true;
                 }
             }
         }
+
+        if (!API_WILDCARDS.isEmpty()) {
+            String str = id.toString();
+            for (WildcardRule rule : API_WILDCARDS) {
+                if (rule.pattern().matcher(str).matches()) {
+                    return true;
+                }
+            }
+        }
+
+        if (!API_ID_PREDICATES.isEmpty()) {
+            for (Predicate<ResourceLocation> predicate : API_ID_PREDICATES) {
+                if (predicate.test(id)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
     public static Set<String> getRawRules() {
-        return Collections.unmodifiableSet(new TreeSet<>(RAW_RULES));
+        Set<String> all = new TreeSet<>(CONFIG_RAW_RULES);
+        all.addAll(API_RAW_RULES);
+        return Collections.unmodifiableSet(all);
+    }
+
+    public static Set<String> getConfigRawRules() {
+        return Collections.unmodifiableSet(new TreeSet<>(CONFIG_RAW_RULES));
     }
 
     public static Set<String> getUnmatchedRules() {
-        Set<String> unmatched = new TreeSet<>(RAW_RULES);
+        Set<String> unmatched = new TreeSet<>(CONFIG_RAW_RULES);
         unmatched.removeAll(MATCHED_RULES);
         return Collections.unmodifiableSet(unmatched);
     }
 
     public static void filterRecipes(Map<ResourceLocation, JsonElement> recipes) {
-        if (EXACT_DISABLED.isEmpty() && WILDCARD_PATTERNS.isEmpty()) return;
+        boolean hasIdRules = !CONFIG_EXACT.isEmpty()
+                || !CONFIG_WILDCARDS.isEmpty()
+                || !API_EXACT.isEmpty()
+                || !API_WILDCARDS.isEmpty()
+                || !API_ID_PREDICATES.isEmpty();
+        boolean hasJsonRules = !API_JSON_PREDICATES.isEmpty();
+        boolean hasOutputRules = !API_OUTPUT_ITEM_PREDICATES.isEmpty()
+                || ContentSuppressionRegistry.hasRecipeOutputSuppressions();
+
+        if (!hasIdRules && !hasJsonRules && !hasOutputRules) {
+            return;
+        }
 
         int removed = 0;
         Iterator<Map.Entry<ResourceLocation, JsonElement>> it = recipes.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<ResourceLocation, JsonElement> entry = it.next();
-            if (isRecipeDisabled(entry.getKey())) {
-                LOGGER.debug("RingoLib: Disabled duplicate recipe: {}", entry.getKey());
+            ResourceLocation id = entry.getKey();
+            JsonElement json = entry.getValue();
+
+            boolean remove = isRecipeDisabled(id)
+                    || matchesJsonPredicates(id, json)
+                    || (hasOutputRules && matchesSuppressedOutput(json));
+
+            if (remove) {
+                LOGGER.debug("RingoLib: Disabled recipe: {}", id);
                 it.remove();
                 removed++;
             }
@@ -200,5 +306,76 @@ public class RecipeFilterManager {
         if (removed > 0) {
             LOGGER.info("RingoLib: Filtered out {} disabled recipe(s)", removed);
         }
+    }
+
+    private static boolean matchesJsonPredicates(ResourceLocation id, @Nullable JsonElement json) {
+        if (API_JSON_PREDICATES.isEmpty() || json == null) {
+            return false;
+        }
+        for (BiPredicate<ResourceLocation, JsonElement> predicate : API_JSON_PREDICATES) {
+            if (predicate.test(id, json)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesSuppressedOutput(@Nullable JsonElement json) {
+        if (json == null || !json.isJsonObject()) {
+            return false;
+        }
+        JsonObject obj = json.getAsJsonObject();
+        for (String key : OUTPUT_JSON_KEYS) {
+            if (obj.has(key) && matchesOutputElement(obj.get(key))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesOutputElement(@Nullable JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return false;
+        }
+        if (element.isJsonPrimitive()) {
+            ResourceLocation id = ResourceLocation.tryParse(element.getAsString());
+            return id != null && isOutputItemDisabled(id);
+        }
+        if (element.isJsonObject()) {
+            JsonObject obj = element.getAsJsonObject();
+            for (String itemKey : List.of("id", "item")) {
+                if (obj.has(itemKey) && obj.get(itemKey).isJsonPrimitive()) {
+                    ResourceLocation id = ResourceLocation.tryParse(obj.get(itemKey).getAsString());
+                    if (id != null && isOutputItemDisabled(id)) {
+                        return true;
+                    }
+                }
+            }
+            if (obj.has("stack") && matchesOutputElement(obj.get("stack"))) {
+                return true;
+            }
+            return false;
+        }
+        if (element.isJsonArray()) {
+            JsonArray arr = element.getAsJsonArray();
+            for (JsonElement child : arr) {
+                if (matchesOutputElement(child)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isOutputItemDisabled(ResourceLocation itemId) {
+        if (ContentSuppressionRegistry.isRecipeOutputDisabled(itemId)) {
+            return true;
+        }
+        for (Predicate<ResourceLocation> predicate : API_OUTPUT_ITEM_PREDICATES) {
+            if (predicate.test(itemId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

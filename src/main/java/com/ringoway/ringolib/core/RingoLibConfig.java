@@ -31,7 +31,6 @@ public class RingoLibConfig {
     public static final String MIGRATIONS_FILE = "migrations.json";
     public static final String DISABLED_RECIPES_FILE = "disabled_recipes.json";
 
-    // Legacy paths for seamless backward compatibility
     private static final String LEGACY_MIGRATIONS_FILE = "ringolib_migrations.json";
     private static final String LEGACY_DISABLED_RECIPES_FILE = "ringolib_disabled_recipes.json";
 
@@ -153,7 +152,7 @@ public class RingoLibConfig {
     }
 
     public static void loadDisabledRecipes() {
-        RecipeFilterManager.clear();
+        RecipeFilterManager.clearConfigRules();
         Path file = resolvePathWithLegacyFallback(DISABLED_RECIPES_FILE, LEGACY_DISABLED_RECIPES_FILE);
         if (!Files.exists(file)) {
             createDefaultDisabledRecipesConfig(file);
@@ -167,7 +166,7 @@ public class RingoLibConfig {
                 int count = 0;
                 for (JsonElement el : arr) {
                     if (el != null && el.isJsonPrimitive()) {
-                        RecipeFilterManager.disableRecipe(el.getAsString());
+                        RecipeFilterManager.disableConfigRecipe(el.getAsString());
                         count++;
                     }
                 }
@@ -269,7 +268,6 @@ public class RingoLibConfig {
             return targetPath;
         }
 
-        // 1. Check if legacy named file exists inside config/ringolib/
         Path legacyInSubdir = targetDir.resolve(legacyFileName);
         if (Files.exists(legacyInSubdir)) {
             try {
@@ -282,7 +280,6 @@ public class RingoLibConfig {
             }
         }
 
-        // 2. Check if legacy named file exists in root config/
         Path legacyInRoot = FMLPaths.CONFIGDIR.get().resolve(legacyFileName);
         if (Files.exists(legacyInRoot)) {
             try {

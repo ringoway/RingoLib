@@ -30,6 +30,7 @@ public abstract class RegistrateRegistrationMixin {
 
     @Inject(method = "register", at = @At("HEAD"), cancellable = true)
     private void ringolib$cancelRegistrateRegistration(RegisterEvent event, CallbackInfo ci) {
+        com.ringoway.ringolib.RingoLib.ensureSuppressionsPosted();
         if (RegistryRedirectManager.shouldCancel(this.type, this.name)) {
             LOGGER.info("RingoLib: Intercepted and cancelled Registrate registration for [{}] {}", this.type.location(), this.name);
             ci.cancel();

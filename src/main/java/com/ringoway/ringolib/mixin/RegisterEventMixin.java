@@ -29,6 +29,7 @@ public abstract class RegisterEventMixin {
             Supplier<T> valueSupplier,
             CallbackInfo ci
     ) {
+        com.ringoway.ringolib.RingoLib.ensureSuppressionsPosted();
         if (RegistryRedirectManager.shouldCancel(registryKey, name)) {
             LOGGER.info("RingoLib: Intercepted and cancelled DeferredRegister for [{}] {}", registryKey.location(), name);
             ci.cancel();

@@ -4,6 +4,7 @@ import com.ringoway.ringolib.RingoLib;
 import com.ringoway.ringolib.api.MigrationEntry;
 import com.ringoway.ringolib.api.RingoMigrationAPI;
 import com.ringoway.ringolib.core.DummyBlockEntity;
+import com.ringoway.ringolib.core.content.ContentSuppressionRegistry;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -27,6 +28,13 @@ public class MixinNbtUtils {
         }
 
         String name = tag.getString("Name");
+        String worldReplacement = ContentSuppressionRegistry.resolveWorldBlockReplacement(name);
+        if (worldReplacement != null) {
+            CompoundTag mutated = tag.copy();
+            mutated.putString("Name", worldReplacement);
+            return mutated;
+        }
+
         if (RingoMigrationAPI.hasBlockMigration(name)) {
             MigrationEntry entry = RingoMigrationAPI.getBlockEntry(name);
             if (entry != null) {
