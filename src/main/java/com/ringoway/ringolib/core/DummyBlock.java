@@ -32,11 +32,14 @@ public class DummyBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> blockEntityType) {
-        return level.isClientSide ? null : (lvl, pos, st, be) -> {
-            if (be instanceof DummyBlockEntity dummyBe) {
+        if (level.isClientSide || blockEntityType != RingoLibRegistry.DUMMY_BLOCK_ENTITY.get()) {
+            return null;
+        }
+        return (lvl, pos, st, be) -> {
+            if (be instanceof DummyBlockEntity dummyBe && !dummyBe.isRestoreChecked()) {
+                dummyBe.markRestoreChecked();
                 String reqMod = dummyBe.getRequiredMod();
-                boolean available = reqMod.isEmpty() || ModList.get().isLoaded(reqMod);
-                if (available) {
+                if (reqMod.isEmpty() || ModList.get().isLoaded(reqMod)) {
                     restoreBlock(lvl, pos, dummyBe);
                 }
             }

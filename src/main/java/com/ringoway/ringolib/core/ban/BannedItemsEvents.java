@@ -4,7 +4,6 @@ import com.ringoway.ringolib.RingoLib;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -15,9 +14,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
-/**
- * Server-side enforcement for banned items (pickup, inventory purge, crafting block, and login sync).
- */
 @EventBusSubscriber(modid = RingoLib.MOD_ID)
 public final class BannedItemsEvents {
 
@@ -50,10 +46,6 @@ public final class BannedItemsEvents {
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (!stack.isEmpty() && BannedItemsManager.isBanned(stack.getItem())) {
-                ItemEntity itemEntity = player.drop(stack.copy(), false);
-                if (itemEntity != null) {
-                    itemEntity.discard();
-                }
                 player.getInventory().setItem(i, ItemStack.EMPTY);
                 foundBanned = true;
             }
@@ -61,6 +53,7 @@ public final class BannedItemsEvents {
 
         if (foundBanned) {
             player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
             player.displayClientMessage(
                     Component.translatable("tooltip.ringolib.banned.removed")
                             .withStyle(ChatFormatting.RED),

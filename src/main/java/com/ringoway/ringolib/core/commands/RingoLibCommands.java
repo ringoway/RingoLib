@@ -12,10 +12,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-/**
- * Registers RingoLib's unified operator command tree under /ringolib and /rl,
- * and extends vanilla /locate with /locate ore.
- */
 @EventBusSubscriber(modid = RingoLib.MOD_ID)
 public final class RingoLibCommands {
 
@@ -29,7 +25,6 @@ public final class RingoLibCommands {
         dispatcher.register(buildRootCommand("ringolib"));
         dispatcher.register(buildRootCommand("rl"));
 
-        // Merge /locate ore <block_or_tag> [radius] into vanilla /locate
         dispatcher.register(
                 Commands.literal("locate")
                         .requires(source -> source.hasPermission(2))

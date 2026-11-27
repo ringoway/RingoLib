@@ -41,9 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Server diagnostics, ticking block entity profiler, and entity/item lag cleanup (/rl lag ...).
- */
 public final class LagCommand {
 
     private static final Set<String> VALUABLE_ITEMS = Set.of(

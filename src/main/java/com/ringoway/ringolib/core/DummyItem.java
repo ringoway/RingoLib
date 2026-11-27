@@ -30,7 +30,7 @@ public class DummyItem extends Item {
 
     @Override
     public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slotId, boolean isSelected) {
-        if (!level.isClientSide && entity instanceof Player player) {
+        if (!level.isClientSide && entity.tickCount % 20 == 0 && entity instanceof Player player) {
             CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
             if (customData != null && customData.contains(TAG_TARGET_ID)) {
                 CompoundTag tag = customData.copyTag();
@@ -45,7 +45,6 @@ public class DummyItem extends Item {
                         ItemStack restored = new ItemStack(targetItem, stack.getCount());
                         restored.applyComponents(stack.getComponents());
 
-                        // Strip internal RingoLib preservation tags so restored items stack cleanly
                         tag.remove(TAG_ORIGINAL_ID);
                         tag.remove(TAG_TARGET_ID);
                         tag.remove(TAG_REQUIRED_MOD);
@@ -56,8 +55,17 @@ public class DummyItem extends Item {
                         }
 
                         Inventory inv = player.getInventory();
-                        if (slotId >= 0 && slotId < inv.getContainerSize()) {
+                        if (slotId >= 0 && slotId < inv.getContainerSize() && inv.getItem(slotId) == stack) {
                             inv.setItem(slotId, restored);
+                            inv.setChanged();
+                        } else {
+                            for (int i = 0; i < inv.getContainerSize(); i++) {
+                                if (inv.getItem(i) == stack) {
+                                    inv.setItem(i, restored);
+                                    inv.setChanged();
+                                    break;
+                                }
+                            }
                         }
                     }
                 }

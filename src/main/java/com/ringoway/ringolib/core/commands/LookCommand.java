@@ -33,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Raycast block and entity inspector (/rl look).
- */
 final class LookCommand {
     private static final double RANGE = 16.0;
 

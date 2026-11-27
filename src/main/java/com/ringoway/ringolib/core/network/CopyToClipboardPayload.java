@@ -11,10 +11,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-/**
- * Clientbound payload requesting the client to write text directly to the system clipboard.
- * Keeps client clipboard APIs isolated via a registered client sink so dedicated servers remain safe.
- */
 public record CopyToClipboardPayload(String text) implements CustomPacketPayload {
 
     public static final Type<CopyToClipboardPayload> TYPE =

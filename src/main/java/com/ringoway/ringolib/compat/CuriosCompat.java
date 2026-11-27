@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Safe bridge for optional Curios API calls.
- * Prevents classloading Curios types when Curios is not installed in the modpack.
+ * Isolates optional Curios API calls when Curios is absent.
  */
 public final class CuriosCompat {
     private static final String CURIOS_MOD_ID = "curios";

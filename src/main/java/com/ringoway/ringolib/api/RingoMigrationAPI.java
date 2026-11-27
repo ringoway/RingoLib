@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Public developer API to register renames, migrations and registry redirects.
+ * Public API for save migrations and registry redirects.
  */
 public class RingoMigrationAPI {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,9 +47,6 @@ public class RingoMigrationAPI {
         registerBlockMigration(oldId, targetId, requiredMod);
     }
 
-    /**
-     * Registers both save-level migration and registry-level redirection (interception + alias).
-     */
     public static void registerItemRedirect(String oldId, String targetId, @Nullable String requiredMod, @Nullable String description) {
         ResourceLocation from = ResourceLocation.tryParse(oldId);
         ResourceLocation to = ResourceLocation.tryParse(targetId);
@@ -65,9 +62,6 @@ public class RingoMigrationAPI {
         registerItemRedirect(oldId, targetId, requiredMod, null);
     }
 
-    /**
-     * Registers both save-level migration and registry-level redirection (interception + alias).
-     */
     public static void registerBlockRedirect(String oldId, String targetId, @Nullable String requiredMod, @Nullable String description) {
         ResourceLocation from = ResourceLocation.tryParse(oldId);
         ResourceLocation to = ResourceLocation.tryParse(targetId);
@@ -107,18 +101,13 @@ public class RingoMigrationAPI {
 
         registerFluidMigration(oldId, targetId, requiredMod, description);
 
-        // 1. Fluid still
         RegistryRedirectManager.registerRedirect(Registries.FLUID, from, to, requiredMod, description);
 
-        // 2. Fluid flowing
         ResourceLocation flowingFrom = ResourceLocation.fromNamespaceAndPath(from.getNamespace(), "flowing_" + from.getPath());
         ResourceLocation flowingTo = ResourceLocation.fromNamespaceAndPath(to.getNamespace(), "flowing_" + to.getPath());
         RegistryRedirectManager.registerRedirect(Registries.FLUID, flowingFrom, flowingTo, requiredMod, description);
 
-        // 3. FluidType (neoforge:fluid_type)
         RegistryRedirectManager.registerRedirect(FLUID_TYPE_REGISTRY_KEY, from, to, requiredMod, description);
-
-        // 4. Liquid block
         RegistryRedirectManager.registerRedirect(Registries.BLOCK, from, to, requiredMod, description);
     }
 

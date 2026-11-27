@@ -32,9 +32,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * Places Ponder or datapack NBT structures directly into the world for scene debugging.
- */
 final class StructurePlaceCommand {
     private static final List<String> ROTATIONS = List.of("none", "90", "180", "270");
 

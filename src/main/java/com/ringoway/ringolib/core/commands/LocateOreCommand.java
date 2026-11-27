@@ -35,10 +35,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
-/**
- * Spiral chunk-section ore locator supporting both single block IDs and #block_tags.
- * Available under /locate ore <target> [radius] and /rl locate ore <target> [radius].
- */
 final class LocateOreCommand {
 
     private static final DynamicCommandExceptionType ERROR_INVALID_TARGET =

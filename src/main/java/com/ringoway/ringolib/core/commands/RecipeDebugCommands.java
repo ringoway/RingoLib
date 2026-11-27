@@ -47,9 +47,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Recipe inspection, live persistent disabling, and crafting-conflict scanner (/rl recipes ...).
- */
 final class RecipeDebugCommands {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 

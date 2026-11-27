@@ -16,8 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Guards {@link BuildCreativeModeTabContentsEvent} mutations against duplicate stacks
- * and missing anchor stacks caused by registry aliases merging multiple mods' items.
+ * Prevents duplicate stacks and missing anchor crashes when registry aliases merge mod items.
  */
 @Mixin(value = BuildCreativeModeTabContentsEvent.class, remap = false)
 public abstract class BuildCreativeModeTabContentsEventMixin {

@@ -11,9 +11,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-/**
- * Physically client-isolated tooltip renderer and session cache cleanup for banned items.
- */
 @EventBusSubscriber(modid = RingoLib.MOD_ID, value = Dist.CLIENT)
 public final class ClientBannedItemsHandler {
 

@@ -38,11 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Inspector command (/rl hand) for modpack authors.
- * Outputs raw ResourceLocation IDs (namespace:path), tags, DataComponents,
- * and matching recipes with instant clipboard copy and one-click [Disable] actions.
- */
 final class HandCommand {
 
     private HandCommand() {
@@ -101,7 +96,6 @@ final class HandCommand {
                 .append(" ===")
                 .withStyle(ChatFormatting.GOLD), false);
 
-        // 1. Item ID (+ [JSON] badge)
         source.sendSuccess(() -> Component.translatable("commands.ringolib.hand.item")
                 .withStyle(ChatFormatting.GRAY)
                 .append(CommandChatHelper.copyable(itemId, itemId, ChatFormatting.GREEN))
@@ -110,7 +104,6 @@ final class HandCommand {
                 .append(CommandChatHelper.copyBadge("JSON", "\"item\": \"" + itemId + "\"", ChatFormatting.AQUA)),
                 false);
 
-        // 2. Block ID (if BlockItem)
         if (item instanceof BlockItem blockItem) {
             String blockId = BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
             source.sendSuccess(() -> Component.translatable("commands.ringolib.hand.block")
@@ -118,19 +111,15 @@ final class HandCommand {
                     .append(CommandChatHelper.copyable(blockId, blockId, ChatFormatting.GREEN)), false);
         }
 
-        // 3. Fluid info (fluid handler capability or bucket fallback)
         sendFluidLines(source, stack, item);
 
-        // 4. Tags (item + block)
         sendItemTags(source, stack);
         if (item instanceof BlockItem blockItem) {
             sendBlockTags(source, blockItem.getBlock());
         }
 
-        // 5. DataComponents patch
         sendDataComponents(source, stack, registries);
 
-        // 6. Output recipes with [Disable] buttons
         List<RecipeHolder<?>> outputs = RecipeDebugCommands.findOutputRecipes(source.getServer(), registries, item);
         if (!outputs.isEmpty()) {
             source.sendSuccess(() -> Component.translatable("commands.ringolib.hand.recipes_header", outputs.size())

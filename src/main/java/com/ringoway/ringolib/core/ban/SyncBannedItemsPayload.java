@@ -13,9 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Clientbound payload syncing the active item ban list to connected clients for tooltip rendering.
- */
 public record SyncBannedItemsPayload(Set<ResourceLocation> bannedItems) implements CustomPacketPayload {
 
     public static final Type<SyncBannedItemsPayload> TYPE =

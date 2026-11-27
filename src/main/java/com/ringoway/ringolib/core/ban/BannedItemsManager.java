@@ -28,11 +28,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Manages the modpack banned items list (config/ringolib/banned_items.json).
- * Banned items cannot be picked up or crafted, are purged from player inventories,
- * and sync to clients so tooltips display a clear warning.
- */
 public final class BannedItemsManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -49,7 +44,7 @@ public final class BannedItemsManager {
         Path targetDir = RingoLibConfig.getConfigDir();
         Path targetFile = targetDir.resolve(FILE_NAME);
 
-        // Migrate legacy config/eternal_cogworks/banned_items.json if present
+        // Migrate legacy eternal_cogworks ban file if present
         if (!Files.exists(targetFile)) {
             Path legacyEcFile = FMLPaths.CONFIGDIR.get().resolve("eternal_cogworks").resolve(FILE_NAME);
             if (Files.exists(legacyEcFile)) {

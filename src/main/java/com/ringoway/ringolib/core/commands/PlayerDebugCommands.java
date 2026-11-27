@@ -23,9 +23,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Player state recovery, inventory dump, and attribute modifier inspection commands.
- */
 final class PlayerDebugCommands {
 
     private PlayerDebugCommands() {

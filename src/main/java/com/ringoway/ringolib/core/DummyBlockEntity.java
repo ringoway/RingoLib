@@ -16,6 +16,7 @@ public class DummyBlockEntity extends BlockEntity {
     private String storedBlockId = "";
     private String requiredMod = "";
     private CompoundTag savedTeData = new CompoundTag();
+    private boolean restoreChecked;
 
     public DummyBlockEntity(BlockPos pos, BlockState blockState) {
         super(RingoLibRegistry.DUMMY_BLOCK_ENTITY.get(), pos, blockState);
@@ -31,6 +32,8 @@ public class DummyBlockEntity extends BlockEntity {
     public String getStoredBlockId() { return storedBlockId; }
     public String getRequiredMod() { return requiredMod; }
     public CompoundTag getSavedTeData() { return savedTeData; }
+    public boolean isRestoreChecked() { return restoreChecked; }
+    public void markRestoreChecked() { this.restoreChecked = true; }
 
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider registries) {

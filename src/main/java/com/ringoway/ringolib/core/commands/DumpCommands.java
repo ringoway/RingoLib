@@ -37,9 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Registry dump commands (/rl dump ingots|effects|fluids) with legacy aliases (/rl ingots dump, /rl effects dump).
- */
 final class DumpCommands {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String[] INGOT_KEYWORDS = {"ingot", "alloy", "steel"};

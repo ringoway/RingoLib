@@ -17,11 +17,6 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Commands for managing banned items (/ringolib ban add|remove|list|clear).
- * Accepts both quoted ("modid:item") and unquoted via StringArgumentType.greedyString() so existing
- * "/rl ban add \"modid:item\"" and "/rl ban add modid:item" both work seamlessly with autocomplete.
- */
 final class BanCommands {
 
     private BanCommands() {

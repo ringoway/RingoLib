@@ -11,10 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Shared Brigadier chat formatting helpers for clickable clipboard copies,
- * command badges, and clickable teleport coordinates.
- */
 final class CommandChatHelper {
 
     private CommandChatHelper() {

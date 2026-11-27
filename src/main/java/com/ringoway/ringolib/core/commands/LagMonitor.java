@@ -15,17 +15,14 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Server tick monitor for automatic item-entity cleanup and operator MSPT alerts.
- */
 @EventBusSubscriber(modid = RingoLib.MOD_ID)
 public final class LagMonitor {
 
     public static volatile int autoItemThreshold = 0;
     public static volatile int alertMsptThreshold = 0;
 
-    private static final int AUTO_CLEANUP_INTERVAL = 20 * 60; // 60 seconds
-    private static final int ALERT_INTERVAL = 20 * 30;        // 30 seconds
+    private static final int AUTO_CLEANUP_INTERVAL = 20 * 60;
+    private static final int ALERT_INTERVAL = 20 * 30;
 
     private static int autoCleanupCooldown = 0;
     private static int alertCooldown = 0;
