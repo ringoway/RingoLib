@@ -64,6 +64,8 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    addModdingDependenciesTo(sourceSets.test)
 }
 
 // localRuntime: for optional runtime-only deps that should not be transitively published.
@@ -95,6 +97,16 @@ repositories {
 dependencies {
     compileOnly "com.tterrag.registrate:Registrate:MC1.21-1.3.0+67"
     compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }
 
 // Expand placeholders in src/main/templates/META-INF/neoforge.mods.toml
@@ -142,6 +154,10 @@ tasks.named('jar', Jar).configure {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs += ['-Xmaxerrs', '5000', '-Xmaxwarns', '5000']
+}
+
+tasks.withType(ProcessResources).configureEach {
+    filteringCharset = 'UTF-8'
 }
 
 idea {
