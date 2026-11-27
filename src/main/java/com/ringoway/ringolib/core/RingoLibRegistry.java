@@ -2,6 +2,7 @@ package com.ringoway.ringolib.core;
 
 import com.ringoway.ringolib.RingoLib;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -42,10 +43,19 @@ public class RingoLibRegistry {
             () -> new BlockItem(DUMMY_BLOCK.get(), new Item.Properties().rarity(Rarity.EPIC).fireResistant())
     );
 
+    public static final ResourceLocation DISABLED_BLOCK_ENTITY_ID =
+            ResourceLocation.fromNamespaceAndPath(RingoLib.MOD_ID, "disabled_block_entity");
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DummyBlockEntity>> DUMMY_BLOCK_ENTITY =
             BLOCK_ENTITY_TYPES.register(
                     "dummy_block",
                     () -> BlockEntityType.Builder.of(DummyBlockEntity::new, DUMMY_BLOCK.get()).build(null)
+            );
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DisabledBlockEntity>> DISABLED_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register(
+                    "disabled_block_entity",
+                    () -> BlockEntityType.Builder.of(DisabledBlockEntity::new).build(null)
             );
 
     public static void register(IEventBus eventBus) {

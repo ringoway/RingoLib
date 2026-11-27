@@ -19,9 +19,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 
 /**
- * Universal manager for registry-level redirection, duplicate interception, and aliasing.
+ * Registry-level redirection, registration cancellation, and alias management.
  */
 public class RegistryRedirectManager {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -31,20 +32,44 @@ public class RegistryRedirectManager {
             ResourceLocation fromId,
             ResourceLocation toId,
             @Nullable String requiredMod,
+            @Nullable BooleanSupplier condition,
             @Nullable String description
     ) {
+        public RedirectEntry(
+                ResourceKey<? extends Registry<?>> registryKey,
+                ResourceLocation fromId,
+                ResourceLocation toId,
+                @Nullable String requiredMod,
+                @Nullable String description
+        ) {
+            this(registryKey, fromId, toId, requiredMod, null, description);
+        }
+
         public boolean isTargetAvailable() {
-            return requiredMod == null || requiredMod.isBlank() || ModList.get().isLoaded(requiredMod);
+            boolean modOk = requiredMod == null || requiredMod.isBlank() || ModList.get().isLoaded(requiredMod);
+            if (!modOk) {
+                return false;
+            }
+            return condition == null || condition.getAsBoolean();
         }
     }
 
     private static final Map<ResourceKey<? extends Registry<?>>, Map<ResourceLocation, RedirectEntry>> REDIRECTS = new ConcurrentHashMap<>();
 
-    /**
-     * Registers a registry redirection.
-     * When target mod is present, the 'from' entry will NOT be registered,
-     * and an alias 'from -> to' will be registered in the registry.
-     */
+    public static void registerRedirect(
+            ResourceKey<? extends Registry<?>> registryKey,
+            ResourceLocation fromId,
+            ResourceLocation toId,
+            @Nullable String requiredMod,
+            @Nullable BooleanSupplier condition,
+            @Nullable String description
+    ) {
+        REDIRECTS.computeIfAbsent(registryKey, k -> new ConcurrentHashMap<>())
+                .put(fromId, new RedirectEntry(registryKey, fromId, toId, requiredMod, condition, description));
+        LOGGER.debug("RingoLib: Registered registry redirect [{}] {} -> {} (req: {})",
+                registryKey.location(), fromId, toId, requiredMod != null ? requiredMod : "none");
+    }
+
     public static void registerRedirect(
             ResourceKey<? extends Registry<?>> registryKey,
             ResourceLocation fromId,
@@ -52,10 +77,7 @@ public class RegistryRedirectManager {
             @Nullable String requiredMod,
             @Nullable String description
     ) {
-        REDIRECTS.computeIfAbsent(registryKey, k -> new ConcurrentHashMap<>())
-                .put(fromId, new RedirectEntry(registryKey, fromId, toId, requiredMod, description));
-        LOGGER.debug("RingoLib: Registered registry redirect [{}] {} -> {} (req: {})",
-                registryKey.location(), fromId, toId, requiredMod != null ? requiredMod : "none");
+        registerRedirect(registryKey, fromId, toId, requiredMod, null, description);
     }
 
     public static void registerRedirect(
@@ -67,9 +89,6 @@ public class RegistryRedirectManager {
         registerRedirect(registryKey, fromId, toId, requiredMod, null);
     }
 
-    /**
-     * Checks if registration of this object should be cancelled.
-     */
     public static boolean shouldCancel(ResourceKey<? extends Registry<?>> registryKey, ResourceLocation id) {
         Map<ResourceLocation, RedirectEntry> map = REDIRECTS.get(registryKey);
         if (map == null) return false;
@@ -82,9 +101,6 @@ public class RegistryRedirectManager {
         return shouldCancel(Registries.ITEM, id);
     }
 
-    /**
-     * Returns the redirect target ID when a redirect is active and its required mod is loaded, or null otherwise.
-     */
     @Nullable
     public static ResourceLocation getRedirectTarget(ResourceKey<? extends Registry<?>> registryKey, ResourceLocation id) {
         Map<ResourceLocation, RedirectEntry> map = REDIRECTS.get(registryKey);
@@ -95,8 +111,7 @@ public class RegistryRedirectManager {
     }
 
     /**
-     * Applies all registered aliases during RegisterEvent.
-     * Should be called at EventPriority.HIGHEST so aliases are in place before any mod registers.
+     * Registers aliases at {@code EventPriority.HIGHEST} before mods register entries.
      */
     public static void applyAliases(RegisterEvent event) {
         ResourceKey<? extends Registry<?>> registryKey = event.getRegistryKey();
@@ -117,8 +132,7 @@ public class RegistryRedirectManager {
     }
 
     /**
-     * Removes redirected items from the source mod's creative tabs.
-     * Should be called at EventPriority.LOWEST on BuildCreativeModeTabContentsEvent.
+     * Strips redirected items from source creative tabs at {@code EventPriority.LOWEST}.
      */
     public static void sanitizeCreativeTab(BuildCreativeModeTabContentsEvent event) {
         try {
